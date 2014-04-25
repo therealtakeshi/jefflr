@@ -1,7 +1,1 @@
-{
-    "name": "Jefflr",
-    "tagline": "Some **super serious** tools for the complete [#jefflr](http://mixlr.com/jeff-gerstmann/chat) experience.",
-    "body": "# jefflr\r\n\r\nJust a silly little tool to make your [Mixlr](http://www.mixlr.com/) experience even better!\r\n\r\n___\r\n\r\n## License\r\n\r\nIf it even matters, this is released under the MIT license, so take it and go crazy. Good luck to you!",
-    "google": "",
-    "note": "Don't delete this file! It's used internally to help with page regeneration."
-}
+{"name":"Jefflr","tagline":"Some **super serious** tools for the complete [#jefflr](http://mixlr.com/jeff-gerstmann/chat) experience.","body":"# Projects\r\n\r\nHere's what's inside:\r\n\r\n+[Bookmarklet](https://github.com/therealtakeshi/jefflr/tree/master/bookmarklet)\r\n+[IRCbot for 2-way Mixlr chat](https://github.com/therealtakeshi/jefflr/tree/master/mixirc)\r\n+[Stream Ripper](https://github.com/therealtakeshi/jefflr/tree/master/pymixlr)\r\n+[Chrome Extension](https://github.com/therealtakeshi/jefflr/tree/master/extension-chrome)\r\n\r\n___\r\n\r\n## License\r\n\r\nIf it even matters, all code in this project is released under the MIT license, so take it and go crazy. Good luck to you!","google":"UA-50378412-1","note":"Don't delete this file! It's used internally to help with page regeneration."}
