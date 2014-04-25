@@ -4,6 +4,6 @@ Some **super serious tools** to make your [Mixlr](http://www.mixlr.com/) (read: 
 
 ___
 
-## Homepage
+## [Homepage](http://therealtakeshi.github.io/jefflr)
 
-[Go here](http://therealtakeshi.github.io/jefflr)
+___
