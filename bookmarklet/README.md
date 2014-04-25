@@ -1,4 +1,4 @@
-# mixlr-toolkit-bookmarklet
+# jefflr-bookmarklet
 
 ___
 
@@ -14,7 +14,7 @@ ___
 
 ## Usage
 
-+ Go to the [Jefflr Homepage](http://jsbin.com/bumamu/6)
++ Go to the [Jefflr Bookmarklet Homepage](http://jsbin.com/bumamu/6)
 + Drag that button to your bookmark bar
 + Click that bookmark when you're on a Mixlr chat page
 + Enjoy!
