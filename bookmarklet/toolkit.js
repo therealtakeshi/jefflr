@@ -236,6 +236,7 @@ normalRules += "h4 {color: #CCC;}";
 //
 // Fixes Z-Index problem when screen size is reduced (nav buttons disappear)
 normalRules += "#main_content {z-index:1002;}";
+normalRules += ".fixed_width #main_menu[role='navigation'] {z-index:1003;}";
 // Background for the page;
 normalRules += "#broadcast_chat {background: url(http://www.bispoke.org/assets/gb/2483078-img_0854.jpg) 50%;background-size:148%}";
 //

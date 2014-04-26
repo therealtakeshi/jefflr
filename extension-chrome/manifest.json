@@ -24,6 +24,6 @@
     // },
     "content_scripts": [{
         "matches": ["http://*.mixlr.com/*"],
-        "js": ["logic.js"]
+        "js": ["jquery.min.js","logic.js"]
     }]
 }
