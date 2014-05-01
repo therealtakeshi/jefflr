@@ -183,7 +183,7 @@ function postComm(comment, channelId, user) {
 		// // Default on actual comment was 1;
 		// // Unsure what exactly this means;
 		// "comment[do_not_publish]":1,
-		});
+	});
 
 	// An object of options to indicate where to post to
 	var httpHeader = {
@@ -293,7 +293,9 @@ function openSock(channelId) {
 			case "comment:hearted":
 				var a = JSON.parse(unescape(m.data));
 				// TODO make this pretty, show original comment and translate user_ids into names.
-				var ircSay = "HEART ADDED! comment_id: "+ a.comment_id+" user_ids: "+a.user_ids;
+				var ircSay = irc.colors.wrap("light_magenta", "<3 ");
+				ircSay += irc.colors.wrap("light_blue", a.user_ids.toString()+" ");
+				ircSay += irc.colors.wrap("light_red", a.comment_id);
 				ircBot.say(ircChannel, ircSay);
 				break;
 		}
