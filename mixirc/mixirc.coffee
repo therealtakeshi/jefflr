@@ -11,6 +11,8 @@ ircNick = "devvlrbot"
 ircChannel = "#jeffdevs"
 ircServer = "irc.freenode.org"
 channelId = 27902
+# This should be replaced by a dict of prod/bob/haji that lets you select
+# which personality to use via nodemon argument
 
 # Advanced bot configuration
 # See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
@@ -46,8 +48,8 @@ userList =
 		"mixlrAuthSession": ""
 		"canHeart": true
 	"Hajitorus":
-		"mixlrUserLogin": "cfb7f765c019e8ac7124280aa1fdc612ecb3a53cdffacab4bb80c6bbe6335b7a2e665fe335449193276d2f7cec95fbc992b3605a3000ca09a4de86996533badb%3A%3A1839756"
-		"mixlrAuthSession": "ccd55cf39bf6544837c8e40f8fe55cf9"
+		"mixlrUserLogin": ""
+		"mixlrAuthSession": ""
 		"canHeart": true
 
 # Creates the IRC client with given params;
@@ -80,10 +82,12 @@ ircInitBot = ->
 		for user, info of userList
 			# console.log(user, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession)
 			continue unless from == user
+			isHeart = /^(\.[0-9]+)$/.test message
+			console.log "#{user}, #{isHeart}, #{info.canHeart}, #{message}"
 			if message.toLowerCase() is "sup " + ircBot.nick
 				ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
 			# NOTE: The Regex below only returns true if the message is ".#" (# = number of any size)
-			else if /^(\.[0-9]+)$/.test message and info.canHeart
+			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
 				commentId = message.replace ".", ""
 				console.log "IRC => postAddCommentHeart: ", user, commentId, message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
 				postAddCommentHeart commentId, info
