@@ -294,7 +294,7 @@ function openSock(channelId) {
 				var a = JSON.parse(unescape(m.data));
 				// TODO make this pretty, show original comment and translate user_ids into names.
 				var ircSay = irc.colors.wrap("light_magenta", "<3 ");
-				ircSay += irc.colors.wrap("light_blue", a.user_ids.toString()+" ");
+				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ");
 				ircSay += irc.colors.wrap("light_red", a.comment_id);
 				ircBot.say(ircChannel, ircSay);
 				break;
