@@ -17,7 +17,7 @@ var channelId = 27902;
 var userAgent = "Mixlr Chatbox <3";
 //var firebaseDomain = '';
 
-// Fancy user class
+// Fancy user class, might implement along with Firebase.
 //function user(nick, mixlrUserLogin, mixlrAuthSession) {
 //	this.nick = nick;
 //	this.mixlrUserLogin = mixlrUserLogin;
@@ -33,13 +33,13 @@ var userAgent = "Mixlr Chatbox <3";
 //	return this.ignoreList.indexOf(name);
 //}
 
-//module.exports = ignore;
-
+// Won't Mixlr => IRC relay if from these usernames
 ignoreList = [
 	"Minnie Marabella",
 	"WERD SLLIM"
 ];
 
+// Users for IRC => Mixlr relay
 userList = {
 	"BobBarker": {
 		"mixlrUserLogin": "",
@@ -79,12 +79,6 @@ var ircBot = new irc.Client(
 	}
 );
 
-// Fixes up JavaScript's encode function;
-// NOTE: not critical;
-//function fixedEncodeURIComponent(str) {
-//	return encodeURIComponent(str).replace(/[!'()]/g, escape).replace(/\*/g, "%2A").replace(/%20/g, "+");
-//}
-
 // Simple pushing to Firebase, with fail and success callbacks;
 // Can be called in getUserData(), but isn't currently;
 //
@@ -102,7 +96,6 @@ var ircBot = new irc.Client(
 //}
 
 // Polls mixlr API and pulls back 50 most-recent comments;
-// NOTE: can pretty much be deprecated since websocket implementation
 /* function getUserData(broadcasterName, cb) {
 	request('http://api.mixlr.com/users/' + broadcasterName + '?include_comments=true', function(err, res, body) {
 		comments = JSON.parse(body).live_page_comments;
@@ -168,8 +161,7 @@ function sendHTTP (httpHeader, data) {
 	httpReq.end();
 }
 
-// HTTP POST
-//function postComm(comment, channelId, authUserLogin, authSession) {
+// Forms HTTP headers and data for IRC => Mixlr comment relay, sends to sendHTTP.
 function postComm(comment, channelId, user) {
 	console.log("postComm => Mixlr: ", user.mixlrUserLogin, user.mixlrAuthSession, comment);
 	var comm = {
@@ -211,6 +203,7 @@ function postComm(comment, channelId, user) {
 	sendHTTP(httpHeader, postData);
 }
 
+// Forms HTTP headers and data for IRC => Mixlr comment hearting, sends to sendHTTP.
 function postAddCommentHeart(commentId, user) {
 	console.log("postAddCommentHeart =>", commentId, user);
 
@@ -235,100 +228,79 @@ function postAddCommentHeart(commentId, user) {
 // Opens a websocket connection and receives data as long as the connection remains open;
 // TODO: add in the ping function (seems to be every 5 minutes);
 function openSock(channelId) {
-/* 	var shake2 = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel":"production;public"
-		}
-	}); */
+	var broadcastStart = false;
+
 	var channelSocket = JSON.stringify({
 		"event":"pusher:subscribe",
 		"data":{
 			"channel":"production;user;"+channelId
 		}
 	});
-
-/* 	shake3 = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel":"production;user;"+userId
-		}
-	}), */
-
-	// NOTE: can get auth from hitting /v2/users
-/* 	var clientData = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel": "crowd;"+channelId
-			//"channel":"presence-production;crowd;"+channelId+"",
-			//"auth":"",
-			//"channel_data":"{\"user_id\":\""+userId+"\",\"user_info\":{\"id\":\""+userId+"\",\"user\":{\"id\":\""+userId+"\"}}}"
-		}
-	}); */
-	
-	var broadcastStart = false;
 	
 	var ws = new websock('ws://ws.pusherapp.com/app/2c4e9e540854144b54a9?protocol=5&client=js&version=1.12.7&flash=false');
+
 	ws.on('open', function() {
 		console.log("Connected.");
 		ws.send(channelSocket);
-//		ws.send(shake2);
-//		ws.send(shake3);
-//		ws.send(clientData);
 	});
+
 	ws.on('message', function(message) {
 		console.log('Received: %s', message);
-		var name = "uninitialized";
-		var content = "uninitialized";
 		try {
 			m = JSON.parse(message);
 		}
 		catch(err) {
 			console.log("JSON.parse(message) failed: "+err.message);
 		}
-		if (m.event === "comment:created") {
-			try {
-//				decodeURIComponent() will throw an exception if it finds an unencoded '%' character, unescape does not.
-//				var a = JSON.parse(decodeURIComponent(m.data));
-				var a = JSON.parse(unescape(m.data));
-			}
-			catch(err) {
-				content = "JSON.parse(unescape(m.data)) failed: "+err.message;
-			}
-			if (ignoreList.indexOf(a.name) === -1 ) {
+
+		switch(m.event) {
+			case "comment:created":
 				try {
-					name = a.name;
-					content = a.content;
-					id = a.id;
-					var ircSay = irc.colors.wrap("light_gray", "[");
-					ircSay += irc.colors.wrap("light_green", name);
-					ircSay += irc.colors.wrap("light_gray", "]: ");
-					ircSay += irc.colors.wrap("yellow", content);
-					ircSay += irc.colors.wrap("light_gray", " ["+id+"]");
-					ircBot.say(ircChannel, ircSay);
+					// NOTE: decodeURIComponent() will throw an exception if it finds an unencoded '%' character, unescape does not.
+						//var a = JSON.parse(decodeURIComponent(m.data));
+					var a = JSON.parse(unescape(m.data));
 				}
 				catch(err) {
-					ircBot.say(ircChannel, err.message);
-					console.log("ircBot.say failed: "+err.message);
+					console.log("JSON.parse(unescape(m.data)) failed: "+err.message);
 				}
-			}
-			else {
-				console.log("Ignored: "+a.name+" : "+a.content);
-			}
-		}
-		else if (m.event === "broadcast:start" && broadcastStart === false) {
-			ircBot.say(ircChannel, "BEEP BOOP JEFF IS LIVE BOOP BEEP");
-			ircBot.say(ircChannel, "LINK FOR INFERIOR HUMAN INTERNET: http://mixlr.com/jeff-gerstmann/chat/");
-			broadcastStart = true;
-		}
-		else if (m.event === "comment:hearted") {
-			var a = JSON.parse(unescape(m.data));
-			var ircSay = "HEART ADDED! comment_id:"+ a.comment_id+" user_ids: "+a.user_ids;
-			ircBot.say(ircChannel, ircSay);
+			
+				if (ignoreList.indexOf(a.name) === -1 ) {
+					try {
+						id = a.id;
+						var ircSay = irc.colors.wrap("light_gray", "[");
+						ircSay += irc.colors.wrap("light_green", a.name);
+						ircSay += irc.colors.wrap("light_gray", "]: ");
+						ircSay += irc.colors.wrap("yellow", a.content);
+						ircSay += irc.colors.wrap("light_gray", " ["+id+"]");
+						ircBot.say(ircChannel, ircSay);
+					}
+					catch(err) {
+						ircBot.say(ircChannel, err.message);
+						console.log("ircBot.say failed: "+err.message);
+					}
+				} else {
+					console.log("Ignored: "+a.name+" : "+a.content);
+				}
+				break;
+
+			case "broadcast:start":
+				// NOTE: I don't think this is needed, keeping commented out in case it is.
+					//if (broadcastStart === false) {
+						//broadcastStart = true;
+				ircBot.say(ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/");
+				break;
+
+			case "comment:hearted":
+				var a = JSON.parse(unescape(m.data));
+				// TODO make this pretty, show original comment and translate user_ids into names.
+				var ircSay = "HEART ADDED! comment_id: "+ a.comment_id+" user_ids: "+a.user_ids;
+				ircBot.say(ircChannel, ircSay);
+				break;
 		}
 	});
+
 	ws.on('close', function() {
-		console.log('Disconnected');
+		console.log("WebSocket Closed");
 	});
 }
 
