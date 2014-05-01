@@ -44,10 +44,12 @@ userList = {
 	"BobBarker": {
 		"mixlrUserLogin": "",
 		"mixlrAuthSession": ""
+		"canHeart": true
 	},
 	"Hajitorus": {
 		"mixlrUserLogin": "",
 		"mixlrAuthSession": ""
+		"canHeart": true
 	}
 };
 
@@ -137,8 +139,10 @@ function ircInitBot() {
 				if (from === user) {
 					if (message.toLowerCase() === "sup "+ircBot.nick) {
 						ircBot.say(to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE");
-					} else if (message.lastIndexOf("<3 ", 0 ) === 0 ) {
-						var commentId = message.replace("<3 ", "");
+					
+					// NOTE: The Regex below only returns true if the message is ".#" (# = number of any size)
+					} else if (/^(\.[0-9]+)$/.test(message) && userList[user].canHeart) {
+						var commentId = message.replace(".", "");
 						console.log("IRC => postAddCommentHeart: ", user, commentId, message, channelId, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession);
 						postAddCommentHeart(commentId, userList[user]);
 					} else {
