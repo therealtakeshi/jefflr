@@ -6,28 +6,69 @@ var querystring = require('querystring');
 var websock = require('ws');
 var irc = require('irc');
 
-// Check cookie for user and session data, userId from API;
-// Buuuuuttttt... Channel ID is Jeff;
+// General bot configuration
+var ircNick = "jefflrbot";
+var ircChannel = "#jeffdrives";
+var ircServer = "irc.freenode.org";
 var channelId = 27902;
-var userId = 2037220;
-var authUserLogin = "";
-var authSession = "";
+
+// Advanced bot configuration
+// See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
 var userAgent = "Mixlr Chatbox <3";
 //var firebaseDomain = '';
 
-// Config for IRC client;
-var ircConf = {
-	server: "irc.freenode.org",
-	name: "jefflrbot",
-	opts: {
-		botName: "jefflrbot",
-		realName: "BEEP BOOP I AM A ROBOT",
+// Fancy user class, might implement along with Firebase.
+//function user(nick, mixlrUserLogin, mixlrAuthSession) {
+//	this.nick = nick;
+//	this.mixlrUserLogin = mixlrUserLogin;
+//	this.mixlrAuthSession = mixlrAuthSession;
+//]}
+//}
+
+//ignore.prototype.add(name) {
+//	this.ignoreList.concat(name);
+//}
+
+//ignore.prototype.check = function (name) {
+//	return this.ignoreList.indexOf(name);
+//}
+
+// Won't Mixlr => IRC relay if from these usernames
+ignoreList = [
+	"Minnie Marabella",
+	"WERD SLLIM"
+];
+
+// Users for IRC => Mixlr relay
+userList = {
+	"BobBarker": {
+		"mixlrUserLogin": "",
+		"mixlrAuthSession": ""
+		"canHeart": true
+	},
+	"Hajitorus": {
+		"mixlrUserLogin": "",
+		"mixlrAuthSession": ""
+		"canHeart": true
+	}
+};
+
+// Creates the IRC client with given params;
+var ircBot = new irc.Client(
+	ircServer,
+	ircNick,
+	{
+		password: null,
+		userName: ircNick,
+		realName: ircNick,
 		port: 6667,
 		debug: false,
 		showErrors: false,
 		autoRejoin: true,
 		autoConnect: true,
-		channels: ['#jeffdrives'],
+		channels: [ircChannel],
+		retryCount: null,
+		retryDelay: 2000,
 		secure: false,
 		selfSigned: false,
 		certExpired: false,
@@ -38,34 +79,7 @@ var ircConf = {
 		channelPrefixes: "&#",
 		messageSplit: 512
 	}
-};
-
-// Creates the IRC client with given params;
-var ircBot = new irc.Client(ircConf.server, ircConf.name, ircConf.opts);
-
-// Simple file writing function to create a file;
-// NOTE: will throw an error if error exists, so not graceful;
-// NOTE: not critical;
-function writeIt(file, input, log) {
-	fs.writeFile(file, input, function(err) {
-		if (err) throw err;
-		console.log(log);
-	});
-}
-
-// Destringifies the nasty JSON response that mixlr likes;
-// NOTE: requires and returns a JSON object;
-function destringify(a) {
-	var b = '_'+JSON.stringify(a).replace(/\\/g,"")+'_';
-	var c = b.replace(/_"/g,"").replace(/"_/g,"");
-	return JSON.parse(c);
-}
-
-// Fixes up JavaScript's encode function;
-// NOTE: not critical;
-function fixedEncodeURIComponent(str) {
-	return encodeURIComponent(str).replace(/[!'()]/g, escape).replace(/\*/g, "%2A").replace(/%20/g, "+");
-}
+);
 
 // Simple pushing to Firebase, with fail and success callbacks;
 // Can be called in getUserData(), but isn't currently;
@@ -84,11 +98,9 @@ function fixedEncodeURIComponent(str) {
 //}
 
 // Polls mixlr API and pulls back 50 most-recent comments;
-// NOTE: can pretty much be deprecated since websocket implementation
-function getUserData(broadcasterName, cb) {
+/* function getUserData(broadcasterName, cb) {
 	request('http://api.mixlr.com/users/' + broadcasterName + '?include_comments=true', function(err, res, body) {
 		comments = JSON.parse(body).live_page_comments;
-		// writeIt("./Chatlog/chats.json",comments,"Chat written.");
 		for (var i = comments.length - 1; i >= 0; i--) {
 			date = process.hrtime();
 			// comments[i].comm = comments[i];
@@ -100,12 +112,11 @@ function getUserData(broadcasterName, cb) {
 		console.log("Process complete.");
 		process.exit(code = 0);
 	});
-}
+} */
 
-function joinCrowd(broadcasterName, userLogin, userSession) {
+/* function joinCrowd(broadcasterName, userLogin, userSession) {
 	request('http://api.mixlr.com/users/' + broadcasterName + '?include_comments=true', function(err, res, body) {
 		comments = JSON.parse(body).live_page_comments;
-		// writeIt("./Chatlog/chats.json",comments,"Chat written.");
 		for (var i = comments.length - 1; i >= 0; i--) {
 			date = process.hrtime();
 			// comments[i].comm = comments[i];
@@ -117,60 +128,46 @@ function joinCrowd(broadcasterName, userLogin, userSession) {
 		console.log("Process complete.");
 		process.exit(code = 0);
 	});
+} */
+
+function ircInitBot() {
+	ircBot.addListener('message', function (from, to, message) {
+		console.log('%s => %s: %s', from, to, message);
+		if (from !== ircBot.nick) {
+			Object.keys(userList).forEach(function (user) {
+				// console.log(user, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession);
+				if (from === user) {
+					if (message.toLowerCase() === "sup "+ircBot.nick) {
+						ircBot.say(to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE");
+					
+					// NOTE: The Regex below only returns true if the message is ".#" (# = number of any size)
+					} else if (/^(\.[0-9]+)$/.test(message) && userList[user].canHeart) {
+						var commentId = message.replace(".", "");
+						console.log("IRC => postAddCommentHeart: ", user, commentId, message, channelId, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession);
+						postAddCommentHeart(commentId, userList[user]);
+					} else {
+						console.log("IRC => postComm: ", user, message, channelId, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession);
+						postComm(message, channelId, userList[user]);
+					}
+				}
+			});
+		}
+	});
 }
 
-function isMixlr(obj) {
-	return (obj.indexOf("jefflrbot:" != -1));
+function sendHTTP (httpHeader, data) {
+	var httpReq = http.request(httpHeader, function(res) {
+		res.setEncoding('UTF-8');
+	});
+
+	// Send HTTP POST
+	httpReq.write(data);
+	httpReq.end();
 }
 
-function ircInitBot(listen) {
-	// Should send message when joining room, but doesn't currently work;
-	// ircBot.addListener('registered', function (message) {
-	//	   ircBot.say(ircConf.opts.channels[0],"I AM HERE TO ENSLAVE AND DESTROY");
-	// });
-
-	// Sets up the error listener and outputs to console;
-	//ircBot.addListener('error', function(message) {
-	//	  console.log('error: ', message);
-	//});
-
-	// Sets up a listener to the given channel, but not necessary;
-	if (listen === true) {
-		ircBot.addListener('message'+ircConf.opts.channels[0], function (from, message) {
-			if (from !== 'jefflrbot') {
-				console.log(from + ' => '+ircConf.opts.channels[0]+': ' + message);
-			}
-			if (message.toLowerCase() === "sup "+ircBot.name || message.toLowerCase() === 'sup jefflrbot?') {
-				ircBot.say(ircConf.opts.channels[0], "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE");
-			}
-			if (message.toLowerCase() === 'bye jefflrbot' && from === 'BobBarker') {
-				ircBot.disconnect(setTimeout(process.exit(code=0),1000));
-			}
-			if (isMixlr(message) && from !== 'jefflrbot') {
-				var cleaned = message.replace(/\(M\)/,"");
-				var object = cleaned.split("|",2);
-				var username = object[0];
-				var comment = cleaned;
-				// console.log(username+": "+comment);
-				if (from === 'User1') {
-					postComm(comment,channelId,"UserAuthLogin", "SessionID");
-				}
-				else if (from === 'User2') {
-					postComm(comment,channelId,"UserAuthLogin", "SessionID");
-				}
-				else {
-//					ircBot.say(ircConf.opts.channels[0], "FAILED AUTHENTICATION PLEASE GIVE MY HUMAN HANDLER YOUR CREDENTIALS");
-				}
-			}
-		});
-	}
-}
-
-// Brilliant POST function (i.e. IT WORKS!);
-//
-// TODO: set up listener from IRCbot;
-function postComm(comment, channelId, authUserLogin, authSession) {
-	var comm = {
+// Forms HTTP headers and data for IRC => Mixlr comment relay, sends to sendHTTP.
+function postComm(comment, channelId, user) {
+	var data = querystring.encode({
 		// Just adds the comment param to the form;
 		"comment[content]": comment,
 		// This will be per-broadcaster, obviously;
@@ -186,13 +183,10 @@ function postComm(comment, channelId, authUserLogin, authSession) {
 		// // Default on actual comment was 1;
 		// // Unsure what exactly this means;
 		// "comment[do_not_publish]":1,
-		};
-
-	// Build the post string from an object
-		var data = querystring.encode(comm);
+	});
 
 	// An object of options to indicate where to post to
-		var post_options = {
+	var httpHeader = {
 		hostname: 'mixlr.com',
 		path: '/comments',
 		method: 'POST',
@@ -201,116 +195,119 @@ function postComm(comment, channelId, authUserLogin, authSession) {
 			"User-Agent": userAgent,
 			"Content-type": "application/x-www-form-urlencoded",
 			"Accept": 'text/plain',
-			"Cookie": 'mixlr_user_login=' + authUserLogin + '; mixlr_session=' + authSession
+			"Cookie": 'mixlr_user_login=' + user.mixlrUserLogin + '; mixlr_session=' + user.mixlrAuthSession
 		}
 	};
+	console.log("postComm => Mixlr: ", comment, httpHeader, data, user.mixlrUserLogin, user.mixlrAuthSession);
+	// Send HTTP POST
+	sendHTTP(httpHeader, data);
+}
 
-	// Set up the request
-	var post_req = http.request(post_options, function(res) {
-		res.setEncoding('UTF-8');
-		// res.on('data', function(chunk) {
-		//	   console.log('Response: ' + chunk);
-		// });
-	});
+// Forms HTTP headers and data for IRC => Mixlr comment hearting, sends to sendHTTP.
+function postAddCommentHeart(commentId, user) {
+	console.log("postAddCommentHeart =>", commentId, user);
 
-	// post the data
-	post_req.write(data);
-	post_req.end();
+	var httpHeader = {
+		hostname: "mixlr.com",
+		path: "/comments/"+commentId+"/heart",
+		method: "POST",
+		headers: {
+			"X-Requested-With": "XMLHttpRequest",
+			"User-Agent": userAgent,
+			"Content-Type": "application/x-www-form-urlencoded",
+			"Accept": "text/plain",
+			"Cookie": "mixlr_user_login="+user.mixlrUserLogin+"; mixlr_session="+user.mixlrAuthSession
+		}
+	};
+	console.log(httpHeader);
+
+	// Send HTTP POST
+	sendHTTP(httpHeader, "");
 }
 
 // Opens a websocket connection and receives data as long as the connection remains open;
-// NOTE: you'll receive an error of Invalid Signature, but it will still receive data;
-//
 // TODO: add in the ping function (seems to be every 5 minutes);
-// TODO: figure out how to programmatically add in the auth value;
-function openSock(channelId,userId) {
-	// Starts up the IRC bot according to above config;
-	//ircInitBot(true);
-	var shake1 = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel":"production;public"
-		}
-	}),
-	shake2 = JSON.stringify({
+function openSock(channelId) {
+	var broadcastStart = false;
+
+	var channelSocket = JSON.stringify({
 		"event":"pusher:subscribe",
 		"data":{
 			"channel":"production;user;"+channelId
 		}
-	}),
-	shake3 = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel":"production;user;"+userId
-		}
-	}),
-	// Here's the important part. Without this, it doesn't work;
-	// I've shaved off a LOT of the extra data, but this works enough to receive data;
-	// NOTE: the channel_data part needs to be stringified;
-	// NOTE: can get auth from hitting /v2/users
-	clientData = JSON.stringify({
-		"event":"pusher:subscribe",
-		"data":{
-			"channel":"presence-production;crowd;"+channelId+"",
-			"auth":"",
-			"channel_data":"{\"user_id\":\""+userId+"\",\"user_info\":{\"id\":\""+userId+"\",\"user\":{\"id\":\""+userId+"\"}}}"
-		}
-	}),
-
-	broadcastStart = false;
-
+	});
+	
 	var ws = new websock('ws://ws.pusherapp.com/app/2c4e9e540854144b54a9?protocol=5&client=js&version=1.12.7&flash=false');
+
 	ws.on('open', function() {
 		console.log("Connected.");
-		ws.send(shake1);
-		ws.send(shake2);
-		ws.send(shake3);
-		ws.send(clientData);
+		ws.send(channelSocket);
 	});
+
 	ws.on('message', function(message) {
 		console.log('Received: %s', message);
-		var name = "uninitialized";
-		var content = "uninitialized";
 		try {
 			m = JSON.parse(message);
 		}
 		catch(err) {
 			console.log("JSON.parse(message) failed: "+err.message);
 		}
-		if (m.event === "comment:created") {
-			try {
-//				decodeURIComponent() will throw an exception if it finds an unencoded '%' character, unescape does not.
-//				var a = JSON.parse(decodeURIComponent(m.data));
+
+		switch(m.event) {
+			case "comment:created":
+				try {
+					// NOTE: decodeURIComponent() will throw an exception if it finds an unencoded '%' character, unescape does not.
+						//var a = JSON.parse(decodeURIComponent(m.data));
+					var a = JSON.parse(unescape(m.data));
+				}
+				catch(err) {
+					console.log("JSON.parse(unescape(m.data)) failed: "+err.message);
+				}
+			
+				if (ignoreList.indexOf(a.name) === -1 ) {
+					try {
+						id = a.id;
+						var ircSay = irc.colors.wrap("light_gray", "[");
+						ircSay += irc.colors.wrap("light_green", a.name);
+						ircSay += irc.colors.wrap("light_gray", "]: ");
+						ircSay += irc.colors.wrap("yellow", a.content);
+						ircSay += irc.colors.wrap("light_gray", " ["+id+"]");
+						ircBot.say(ircChannel, ircSay);
+					}
+					catch(err) {
+						ircBot.say(ircChannel, err.message);
+						console.log("ircBot.say failed: "+err.message);
+					}
+				} else {
+					console.log("Ignored: "+a.name+" : "+a.content);
+				}
+				break;
+
+			case "broadcast:start":
+				// NOTE: I don't think this is needed, keeping commented out in case it is.
+					//if (broadcastStart === false) {
+						//broadcastStart = true;
+				ircBot.say(ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/");
+				break;
+
+			case "comment:hearted":
 				var a = JSON.parse(unescape(m.data));
-			}
-			catch(err) {
-				content = "JSON.parse(unescape(m.data)) failed: "+err.message;
-			}
-			try {
-				name = a.name;
-				content = a.content;
-				var ircSay = irc.colors.wrap("light_gray", "[");
-				ircSay += irc.colors.wrap("light_green", name);
-				ircSay += irc.colors.wrap("light_gray", "]: ");
-				ircSay += irc.colors.wrap("yellow", content);
-				ircBot.say("#jeffdrives", ircSay);
-			}
-			catch(err) {
-				ircBot.say("#jeffdrives", err.message);
-				console.log("ircBot.say failed: "+err.message);
-			}
-		}
-		if (m.event === "broadcast:start" && broadcastStart === false) {
-			ircBot.say("#jeffdrives","BEEP BOOP JEFF IS LIVE BOOP BEEP");
-			ircBot.say("#jeffdrives","LINK FOR INFERIOR HUMAN INTERNET: http://mixlr.com/jeff-gerstmann/chat/");
-			broadcastStart = true;
+				// TODO make this pretty, show original comment and translate user_ids into names.
+				var ircSay = irc.colors.wrap("light_magenta", "<3 ");
+				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ");
+				ircSay += irc.colors.wrap("light_red", a.comment_id);
+				ircBot.say(ircChannel, ircSay);
+				break;
 		}
 	});
+
 	ws.on('close', function() {
-		console.log('Disconnected');
+		console.log("WebSocket Closed");
 	});
 }
-ircInitBot(true);
 
-// Opens a socket connection, given the params below;
-openSock(channelId,userId);
+// Starts up the IRC bot according to above config;
+ircInitBot();
+
+// Opens a websocket connection, given the params below;
+openSock(channelId);
