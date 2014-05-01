@@ -167,8 +167,7 @@ function sendHTTP (httpHeader, data) {
 
 // Forms HTTP headers and data for IRC => Mixlr comment relay, sends to sendHTTP.
 function postComm(comment, channelId, user) {
-	console.log("postComm => Mixlr: ", user.mixlrUserLogin, user.mixlrAuthSession, comment);
-	var comm = {
+	var data = querystring.encode({
 		// Just adds the comment param to the form;
 		"comment[content]": comment,
 		// This will be per-broadcaster, obviously;
@@ -184,10 +183,7 @@ function postComm(comment, channelId, user) {
 		// // Default on actual comment was 1;
 		// // Unsure what exactly this means;
 		// "comment[do_not_publish]":1,
-		};
-
-	// Build the post string from an object
-	var postData = querystring.encode(comm);
+		});
 
 	// An object of options to indicate where to post to
 	var httpHeader = {
@@ -202,9 +198,9 @@ function postComm(comment, channelId, user) {
 			"Cookie": 'mixlr_user_login=' + user.mixlrUserLogin + '; mixlr_session=' + user.mixlrAuthSession
 		}
 	};
-
+	console.log("postComm => Mixlr: ", comment, httpHeader, data, user.mixlrUserLogin, user.mixlrAuthSession);
 	// Send HTTP POST
-	sendHTTP(httpHeader, postData);
+	sendHTTP(httpHeader, data);
 }
 
 // Forms HTTP headers and data for IRC => Mixlr comment hearting, sends to sendHTTP.
