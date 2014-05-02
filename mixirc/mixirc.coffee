@@ -37,22 +37,6 @@ channelId = 27902
 userAgent = "Mixlr Chatbox <3"
 #firebaseDomain = ''
 
-# Fancy user class, might implement along with Firebase.
-#function user(nick, mixlrUserLogin, mixlrAuthSession) {
-#	this.nick = nick;
-#	this.mixlrUserLogin = mixlrUserLogin;
-#	this.mixlrAuthSession = mixlrAuthSession;
-#]}
-#}
-
-#ignore.prototype.add(name) {
-#	this.ignoreList.concat(name);
-#}
-
-#ignore.prototype.check = function (name) {
-#	return this.ignoreList.indexOf(name);
-#}
-
 # Won't Mixlr => IRC relay if from these usernames
 ignoreList = [
 	"Minnie Marabella",
@@ -103,19 +87,19 @@ ircInitBot = ->
 		console.log '%s => %s: %s', from, to, message
 		return if from is ircBot.nick
 		for user, info of userList
-			# console.log(user, userList[user].mixlrUserLogin, userList[user].mixlrAuthSession)
 			continue unless from == user
-			isHeart = /^(\.[0-9]+)$/.test message
-			console.log "#{user}, #{isHeart}, #{info.canHeart}, #{message}"
 			if message.toLowerCase() is "sup " + ircBot.nick
 				ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
-			# NOTE: The Regex below only returns true if the message is ".#" (# = number of any size)
+			# NOTE: The Regex below only returns true if the message is ".#"
+			# (# = number of any size)
 			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
 				commentId = message.replace ".", ""
-				console.log "IRC => postAddCommentHeart: ", user, commentId, message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+				console.log "IRC => postAddCommentHeart: ", user, commentId,
+					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
 				postAddCommentHeart commentId, info
 			else
-				console.log "IRC => postComm: ", user, message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+				console.log "IRC => postComm: ", user, message, channelId,
+					info.mixlrUserLogin, info.mixlrAuthSession
 				postComm message, channelId, info
 
 sendHTTP = (httpHeader, data) ->
@@ -140,8 +124,10 @@ postComm = (comment, channelId, user) ->
 			"User-Agent": userAgent
 			"Content-type": "application/x-www-form-urlencoded"
 			"Accept": 'text/plain'
-			"Cookie": 'mixlr_user_login=' + user.mixlrUserLogin + '; mixlr_session=' + user.mixlrAuthSession
-	console.log "postComm => Mixlr: ", comment, httpHeader, data, user.mixlrUserLogin, user.mixlrAuthSession
+			"Cookie": 'mixlr_user_login=' + user.mixlrUserLogin +
+				'; mixlr_session=' + user.mixlrAuthSession
+	console.log "postComm => Mixlr: ", comment, httpHeader, data,
+		user.mixlrUserLogin, user.mixlrAuthSession
 	# Send HTTP POST
 	sendHTTP httpHeader, data
 
@@ -157,7 +143,8 @@ postAddCommentHeart = (commentId, user) ->
 			"User-Agent": userAgent
 			"Content-Type": "application/x-www-form-urlencoded"
 			"Accept": "text/plain"
-			"Cookie": "mixlr_user_login="+user.mixlrUserLogin+"; mixlr_session="+user.mixlrAuthSession
+			"Cookie": "mixlr_user_login=" + user.mixlrUserLogin +
+				"; mixlr_session=" + user.mixlrAuthSession
 	console.log httpHeader
 	# Send HTTP POST
 	sendHTTP httpHeader, ""
@@ -188,7 +175,8 @@ openSock = (channelId) ->
 		switch m.event
 			when "comment:created"
 				try
-					# NOTE: decodeURIComponent() will throw an exception if it finds an unencoded '%' character, unescape does not.
+					# NOTE: decodeURIComponent() will throw an exception if it finds
+					# an unencoded '%' character, unescape does not.
 					#a = JSON.parse(decodeURIComponent(m.data))
 					a = JSON.parse unescape m.data
 				catch err
@@ -216,9 +204,10 @@ openSock = (channelId) ->
 
 			when "comment:hearted"
 				a = JSON.parse(unescape(m.data))
-				# TODO make this pretty, show original comment and translate user_ids into names.
+				# TODO make this pretty, show original comment and translate
+				# user_ids into names.
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
-				ircSay += irc.colors.wrap("light_blue", a.user_ids.toString()+" ");
+				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ");
 				ircSay += irc.colors.wrap("light_red", a.comment_id);
 				ircBot.say(ircChannel, ircSay);
 
