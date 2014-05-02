@@ -7,6 +7,24 @@ websock = require('ws')
 irc = require('irc')
 
 # General bot configuration
+botDefaults = 
+	ircNick: "jefflrbot"
+	ircChan: "#JeffDrives"
+	ircServ: "irc.freenode.org"
+	mixChan: 27902
+
+botPersonalities =
+	"jefflr2":
+		ircNick: "jefflrbot2"
+		ircChan: "#JeffDrives2"
+	"haji":
+		ircNick: "devvlrbot"
+		ircChan: "#JeffDevs"
+
+for name, opts in botPersonalities when process.argv is name
+	for key, val in opts
+		botDefaults[key] = val
+
 ircNick = "devvlrbot"
 ircChannel = "#jeffdevs"
 ircServer = "irc.freenode.org"
@@ -40,6 +58,11 @@ ignoreList = [
 	"Minnie Marabella",
 	"WERD SLLIM"
 ]
+# Ideally:
+# .info minnie
+# -> jefflr returns a minnie infospiel, including uid
+# .ignore uid
+# -> jefflr fucks off the uid and all aliases
 
 # Users for IRC => Mixlr relay
 userList =
