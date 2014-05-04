@@ -17,7 +17,6 @@ getShowreel = (url, callback) ->
 		res.on 'end', () ->
 			startStr = data.indexOf "broadcasterData", 0
 			lastStr = data.indexOf "}];", startStr
-			jsonStr = data.slice startStr+18, lastStr+3
 			evalData = "var "
 			evalData += data.slice startStr, lastStr+3
 			eval (evalData)
