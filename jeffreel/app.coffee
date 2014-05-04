@@ -6,10 +6,23 @@ app = express()
 app.set('view engine', 'coffee')
 app.engine 'coffee', require('coffeecup').__express
 
-url = "http://mixlr.com/jeff-gerstmann/showreel/"
+user = 'jeff-gerstmann'
 
-getShowreel = (url, callback) ->
-	http.get "http://mixlr.com/jeff-gerstmann/showreel/", (res) ->
+getShowreel = (user, page, callback) ->
+
+	showreelPath = '/'
+	showreelPath += user
+	showreelPath += '/showreel/?page='
+	showreelPath += page.toString()
+
+	options = {
+		hostname: 'mixlr.com',
+		port: 80,
+		path: showreelPath,
+		method: 'GET'
+	}
+
+	req = http.request options, (res) ->
 		data = ''
 		res.setEncoding('utf8')
 		res.on 'data', (chunk) ->
@@ -21,10 +34,12 @@ getShowreel = (url, callback) ->
 			evalData += data.slice startStr, lastStr+3
 			eval (evalData)
 			callback { broadcasts, broadcasterData }
+	req.end()
 
 app.get '/', (req, res) ->
-		getShowreel url, (broadcasts, broadcasterData) ->
-			res.render 'index', broadcasts, broadcasterData
+	page = 1
+	getShowreel user, page, (broadcasts, broadcasterData) ->
+		res.render 'index', broadcasts, broadcasterData
 
 app.listen 3000
 
