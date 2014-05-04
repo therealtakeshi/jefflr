@@ -38,9 +38,12 @@ getShowreel = (user, page, callback) ->
 
 app.get '/', (req, res) ->
 	page = 1
+
+	if isFinite(req.query.page)
+		page = req.query.page
+		
 	getShowreel user, page, (broadcasts, broadcasterData) ->
-		indexTitle = 'Jeffreel'
-		res.render 'index', broadcasts, broadcasterData, pageName = indexTitle
+		res.render 'index', broadcasts, broadcasterData
 
 app.listen 3000
 
