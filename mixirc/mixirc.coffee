@@ -37,22 +37,6 @@ channelId = 27902
 userAgent = "Mixlr Chatbox <3"
 #firebaseDomain = ''
 
-# Fancy user class, might implement along with Firebase.
-#function user(nick, mixlrUserLogin, mixlrAuthSession) {
-#	this.nick = nick;
-#	this.mixlrUserLogin = mixlrUserLogin;
-#	this.mixlrAuthSession = mixlrAuthSession;
-#]}
-#}
-
-#ignore.prototype.add(name) {
-#	this.ignoreList.concat(name);
-#}
-
-#ignore.prototype.check = function (name) {
-#	return this.ignoreList.indexOf(name);
-#}
-
 # Won't Mixlr => IRC relay if from these usernames
 ignoreList = [
 	"Minnie Marabella",
@@ -218,7 +202,7 @@ openSock = (channelId) ->
 				a = JSON.parse(unescape(m.data))
 				# TODO make this pretty, show original comment and translate user_ids into names.
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
-				ircSay += irc.colors.wrap("light_blue", a.user_ids.toString()+" ");
+				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ");
 				ircSay += irc.colors.wrap("light_red", a.comment_id);
 				ircBot.say(ircChannel, ircSay);
 
