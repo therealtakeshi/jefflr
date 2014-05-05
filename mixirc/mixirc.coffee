@@ -73,16 +73,16 @@ userList =
 		"canHeart": true
 
 # Creates the IRC client with given params
-ircBot = new irc.Client ircServer, ircNick,
+ircBot = new irc.Client botDefaults.ircServer, botDefaults.ircNick,
 	password: null,
-	userName: ircNick,
-	realName: ircNick,
+	userName: botDefaults.ircNick,
+	realName: botDefaults.ircNick,
 	port: 6667,
 	debug: false,
 	showErrors: false,
 	autoRejoin: true,
 	autoConnect: true,
-	channels: [ircChannel],
+	channels: [botDefaults.ircChannel],
 	retryCount: null,
 	retryDelay: 2000,
 	secure: false,
@@ -108,12 +108,12 @@ ircInitBot = ->
 			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
 				commentId = message.replace ".", ""
 				console.log "IRC => postAddCommentHeart: ", user, commentId,
-					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+					message, botDefaults.mixChan, info.mixlrUserLogin, info.mixlrAuthSession
 				postAddCommentHeart commentId, info
 			else
-				console.log "IRC => postComm: ", user, message, channelId,
+				console.log "IRC => postComm: ", user, message, botDefaults.mixChan,
 					info.mixlrUserLogin, info.mixlrAuthSession
-				postComm message, channelId, info
+				postComm message, botDefaults.mixChan, info
 
 sendHTTP = (httpHeader, data) ->
 	httpReq = http.request httpHeader, (res) ->
@@ -202,9 +202,9 @@ openSock = (channelId) ->
 						ircSay += irc.colors.wrap "light_gray", "]: "
 						ircSay += irc.colors.wrap "yellow", a.content
 						ircSay += irc.colors.wrap "light_gray", " ["+id+"]"
-						ircBot.say ircChannel, ircSay
+						ircBot.say botDefaults.ircChannel, ircSay
 					catch err
-						ircBot.say ircChannel, err.message
+						ircBot.say botDefaults.ircChannel, err.message
 						console.log "ircBot.say failed: "+err.message
 				else
 					console.log "Ignored: "+a.name+" : "+a.content
@@ -212,7 +212,7 @@ openSock = (channelId) ->
 			when "broadcast:start"
 				if broadcastStart is false
 					broadcastStart = true
-					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
+					ircBot.say botDefaults.ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
 				a = JSON.parse (unescape m.data)
@@ -221,7 +221,7 @@ openSock = (channelId) ->
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
 				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
 				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say(ircChannel, ircSay)
+				ircBot.say(botDefaults.ircChannel, ircSay)
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
@@ -230,6 +230,6 @@ openSock = (channelId) ->
 ircInitBot()
 
 # Opens a websocket connection, given the params below
-openSock channelId
+openSock botDefaults.mixChan
 
 # vim: set noet ts=4:
