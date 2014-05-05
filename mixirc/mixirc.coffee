@@ -24,16 +24,22 @@ ircMessage = (from, to, message) ->
 	return if from is ircBot.nick  # abort if talking to self
 	info = userList[from]
 	return unless info?  # abort if this is a nobody
+	heartMatch = /^\.([0-9]+)$/.exec message
+	mixMsgMatch = /^\[\[ (.+)$/.exec message
+	mixHrtMatch = /^\]\] ([0-9]+)$/.exec message
 	switch
 		when message.toLowerCase() is "sup " + ircBot.nick
 			ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
 		# NOTE: The Regex below only returns true if the message is ".#"
 		# (# = number of any size)
-		when (/^(\.[0-9]+)$/.test message) and info.canHeart
-			commentId = message.replace ".", ""
-			console.log "IRC => postAddCommentHeart: ", from, commentId,
+		when info.canHeart and heartMatch?
+			console.log "IRC => postAddCommentHeart: ", from, heartMatch[1],
 				message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
-			postAddCommentHeart commentId, info, userAgent
+			postAddCommentHeart heartMatch[1], info, userAgent
+		when info.canHeart and mixHrtMatch?
+			xhrComm mixHrtMatch[1], info
+		when mixMsgMatch?
+			xhrComm mixMsgMatch[1], channelId, info
 		else
 			console.log "IRC => postComm: ", from, message, channelId,
 				info.mixlrUserLogin, info.mixlrAuthSession
