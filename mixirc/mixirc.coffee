@@ -96,8 +96,6 @@ xhrComm = (comment, channelId, user) ->
 		"comment[content]": comment
 		"comment[broadcaster_id]": channelId
 
-data = { "comment[content]": "testing things", "comment[broadcaster_id]": 27902 }
-
 xhrCommAddHeart = (commentId, user) ->
 	postMix user, "http://mixlr.com/comments/#{commentId}/heart"
 
