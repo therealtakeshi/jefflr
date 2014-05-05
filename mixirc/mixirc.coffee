@@ -59,7 +59,7 @@ ircInitBot = () ->
 					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
 				postAddCommentHeart commentId, info, userAgent
 			else
-				console.log "IRC => postComm: ", user, message, channelId,
+				console.log "IRC => postComm: ", user, message, botDefaults.mixChan,
 					info.mixlrUserLogin, info.mixlrAuthSession
 				postComm message, channelId, info, userAgent
 
@@ -150,9 +150,9 @@ openSock = () ->
 						ircSay += irc.colors.wrap "light_gray", "]: "
 						ircSay += irc.colors.wrap "yellow", a.content
 						ircSay += irc.colors.wrap "light_gray", " ["+id+"]"
-						ircBot.say ircChannel, ircSay
+						ircBot.say botDefaults.ircChannel, ircSay
 					catch err
-						ircBot.say ircChannel, err.message
+						ircBot.say botDefaults.ircChannel, err.message
 						console.log "ircBot.say failed: "+err.message
 				else
 					console.log "Ignored: "+a.name+" : "+a.content
@@ -160,7 +160,7 @@ openSock = () ->
 			when "broadcast:start"
 				if broadcastStart is false
 					broadcastStart = true
-					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
+					ircBot.say botDefaults.ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
 				a = JSON.parse (unescape m.data)
@@ -169,7 +169,7 @@ openSock = () ->
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
 				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
 				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say(ircChannel, ircSay)
+				ircBot.say(botDefaults.ircChannel, ircSay)
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
@@ -180,68 +180,24 @@ startBot = () ->
 	# Opens a websocket connection, given the params below
 	openSock()
 
-if useFirebase
-	firebase = require('firebase')
-	auth = require('./auth.json')
-	db = new firebase(auth.domain)
-	db.auth auth.token, (error) ->
-		if error
-			console.log "[FAIL] Firebase Authication: ", error
-		else
-			console.log "[PASS] Firebase Authenticated"
-	dataRef = new firebase(auth.domain)
-	dataRef.on 'value', (snapshot) ->
-		data = snapshot.val()
-		ircNick = data.config.ircNick
-		ircChannel = data.config.ircChannel
-		ircServer = data.config.ircServer
-		channelId = data.config.channelId
-		userAgent = data.config.userAgent
-		userList = data.users
-		ignoreList = data.ignoreList
-		startBot()
-
-else
-	# This should be replaced by a dict of prod/bob/haji that lets you select
-	# See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
-	botDefaults = 
-		ircNick: "jefflrbot"
-		ircChan: "#JeffDrives"
-		ircServ: "irc.freenode.org"
-		mixChan: 27902
-
-	botPersonalities =
-		"jefflr2":
-			ircNick: "jefflrbot2"
-			ircChan: "#JeffDrives2"
-		"haji":
-			ircNick: "devvlrbot"
-			ircChan: "#JeffDevs"
-
-	for name, opts in botPersonalities when process.argv is name
-		for key, val in opts
-			botDefaults[key] = val
-
-	# Won't Mixlr => IRC relay if from these usernames
-	ignoreList = [
-		"Minnie Marabella",
-		"WERD SLLIM"
-	]
-	# Ideally:
-	# .info minnie
-	# -> jefflr returns a minnie infospiel, including uid
-	# .ignore uid
-	# -> jefflr fucks off the uid and all aliases
-
-	# Users for IRC => Mixlr relay
-	userList =
-		"BobBarker":
-			"mixlrUserLogin": ""
-			"mixlrAuthSession": ""
-			"canHeart": true
-		"Hajitorus":
-			"mixlrUserLogin": ""
-			"mixlrAuthSession": ""
-			"canHeart": true
+firebase = require('firebase')
+auth = require('./auth.json')
+db = new firebase(auth.domain)
+db.auth auth.token, (error) ->
+	if error
+		console.log "[FAIL] Firebase Authication: ", error
+	else
+		console.log "[PASS] Firebase Authenticated"
+dataRef = new firebase(auth.domain)
+dataRef.on 'value', (snapshot) ->
+	data = snapshot.val()
+	ircNick = data.config.ircNick
+	ircChannel = data.config.ircChannel
+	ircServer = data.config.ircServer
+	channelId = data.config.channelId
+	userAgent = data.config.userAgent
+	userList = data.users
+	ignoreList = data.ignoreList
+	startBot()
 
 # vim: set noet ts=4:
