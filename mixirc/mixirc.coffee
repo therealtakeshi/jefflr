@@ -35,7 +35,8 @@ ircMessage = (from, to, message) ->
 				message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
 			postAddCommentHeart heartMatch[1], info, userAgent
 		when info.canHeart and mixHrtMatch?
-			xhrComm mixHrtMatch[1], info
+			console.log "IRC => xhrCommAddHeart #{mixHrtMatch[1]}, #{info}"
+			xhrCommAddHeart mixHrtMatch[1], info
 		when mixMsgMatch?
 			xhrComm mixMsgMatch[1], channelId, info
 		else
@@ -73,25 +74,29 @@ postMix = (user, url, data) ->
 	jar = request.jar()
 	c = request.cookie "mixlr_user_login=#{user.mixlrUserLogin}" +
 		"; mixlr_session=#{user.mixlrAuthSession}"
+	console.log "postMix: c: #{c}"
 	jar.setCookie c, url
-	opts =
-		url: url
+	form = {}
+	form[k] = v for k, v of data
+	req = request {
+		method: 'POST'
+		uri: url
 		jar: jar
-	req = request.post opts, (e, resp, body) ->
+		form: form
+	}, (e, resp, body) ->
 		return console.log "postMix: POST failed" if e
 		if resp.statusCode == 200
 			info = JSON.parse body
 			console.log "postMix: #{k}: #{v}" for k, v of info
 		else
 			console.log "postMix: server returned #{resp.statusCode}"
-	if data
-		form = req.form()
-		form.append k, v for k, v of data
 
 xhrComm = (comment, channelId, user) ->
 	postMix user, 'http://mixlr.com/comments',
 		"comment[content]": comment
 		"comment[broadcaster_id]": channelId
+
+data = { "comment[content]": "testing things", "comment[broadcaster_id]": 27902 }
 
 xhrCommAddHeart = (commentId, user) ->
 	postMix user, "http://mixlr.com/comments/#{commentId}/heart"
@@ -231,6 +236,9 @@ dataRef.on 'value', (snapshot) ->
 	data = snapshot.val()
 	ircNick = data.config.ircNick
 	ircChannel = data.config.ircChannel
+	if 'dev' in process.argv
+		ircNick = 'devvlrbot'
+		ircChannel = '#JeffDevs'
 	ircServer = data.config.ircServer
 	channelId = data.config.channelId
 	userAgent = data.config.userAgent
