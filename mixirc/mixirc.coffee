@@ -63,6 +63,33 @@ ircInitBot = () ->
 					info.mixlrUserLogin, info.mixlrAuthSession
 				postComm message, channelId, info, userAgent
 
+postMix = (user, url, data) ->
+	jar = request.jar()
+	c = request.cookie "mixlr_user_login=#{user.mixlrUserLogin}" +
+		"; mixlr_session=#{user.mixlrAuthSession}"
+	jar.setCookie c, url
+	opts =
+		url: url
+		jar: jar
+	req = request.post opts, (e, resp, body) ->
+		return console.log "postMix: POST failed" if e
+		if resp.statusCode == 200
+			info = JSON.parse body
+			console.log "postMix: #{k}: #{v}" for k, v of info
+		else
+			console.log "postMix: server returned #{resp.statusCode}"
+	if data
+		form = req.form()
+		form.append k, v for k, v of data
+
+xhrComm = (comment, channelId, user) ->
+	postMix user, 'http://mixlr.com/comments',
+		"comment[content]": comment
+		"comment[broadcaster_id]": channelId
+
+xhrCommAddHeart = (commentId, user) ->
+	postMix user, "http://mixlr.com/comments/#{commentId}/heart"
+
 sendHTTP = (httpHeader, data) ->
 	httpReq = http.request httpHeader, (res) ->
 		res.setEncoding('UTF-8')
