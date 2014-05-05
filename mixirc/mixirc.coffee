@@ -5,72 +5,83 @@ request = require('request')
 querystring = require('querystring')
 websock = require('ws')
 irc = require('irc')
-firebase = require('firebase')
-auth = require('./auth.json')
 
 # General bot configuration
-botDefaults = 
-	ircNick: "jefflrbot"
-	ircChan: "#JeffDrives"
-	ircServ: "irc.freenode.org"
-	mixChan: 27902
-
-botPersonalities =
-	"jefflr2":
-		ircNick: "jefflrbot2"
-		ircChan: "#JeffDrives2"
-	"haji":
-		ircNick: "devvlrbot"
-		ircChan: "#JeffDevs"
-
-for name, opts in botPersonalities when process.argv is name
-	for key, val in opts
-		botDefaults[key] = val
-
 ircNick = "devvlrbot"
 ircChannel = "#jeffdevs"
 ircServer = "irc.freenode.org"
 channelId = 27902
-# This should be replaced by a dict of prod/bob/haji that lets you select
-# which personality to use via nodemon argument
-
-# Advanced bot configuration
-# See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
 userAgent = "mixirc <3"
 
-# New proof of concept firebase thingy.
-firebaseDomain = "https://blazing-fire-3008.firebaseio.com/"
-db = new firebase(firebaseDomain)
-db.auth auth.token, (error) ->
-	if error
-		console.log "[FAIL] Firebase Authication: ", error
-	else
-		console.log "[PASS] Firebase Authenticated"
-dataRef = new firebase(firebaseDomain+'users/BobBarker')
-dataRef.on 'value', (snapshot) ->
-	console.log snapshot.val()
+userList = {}
+ignoreList = []
 
-# Won't Mixlr => IRC relay if from these usernames
-ignoreList = [
-	"Minnie Marabella",
-	"WERD SLLIM"
-]
-# Ideally:
-# .info minnie
-# -> jefflr returns a minnie infospiel, including uid
-# .ignore uid
-# -> jefflr fucks off the uid and all aliases
+useFirebase = true
 
-# Users for IRC => Mixlr relay
-userList =
-	"BobBarker":
-		"mixlrUserLogin": ""
-		"mixlrAuthSession": ""
-		"canHeart": true
-	"Hajitorus":
-		"mixlrUserLogin": ""
-		"mixlrAuthSession": ""
-		"canHeart": true
+if useFirebase
+	firebase = require('firebase')
+	auth = require('./auth.json')
+	# New proof of concept firebase thingy.
+	firebaseDomain = "https://blazing-fire-3008.firebaseio.com/"
+	db = new firebase(firebaseDomain)
+	db.auth auth.token, (error) ->
+		if error
+			console.log "[FAIL] Firebase Authication: ", error
+		else
+			console.log "[PASS] Firebase Authenticated"
+	dataRef = new firebase(firebaseDomain)
+	dataRef.on 'value', (snapshot) ->
+		db = snapshot.val()
+		ircNick = db.config.ircNick
+		ircChannel = db.config.ircChannel
+		ircServer = db.config.ircServer
+		channelId = db.config.channelId
+		userAgent = db.config.userAgent
+		ignoreList = db.ignoreList
+		userList = db.users
+
+else
+	# This should be replaced by a dict of prod/bob/haji that lets you select
+	# See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
+	botDefaults = 
+		ircNick: "jefflrbot"
+		ircChan: "#JeffDrives"
+		ircServ: "irc.freenode.org"
+		mixChan: 27902
+
+	botPersonalities =
+		"jefflr2":
+			ircNick: "jefflrbot2"
+			ircChan: "#JeffDrives2"
+		"haji":
+			ircNick: "devvlrbot"
+			ircChan: "#JeffDevs"
+
+	for name, opts in botPersonalities when process.argv is name
+		for key, val in opts
+			botDefaults[key] = val
+
+	# Won't Mixlr => IRC relay if from these usernames
+	ignoreList = [
+		"Minnie Marabella",
+		"WERD SLLIM"
+	]
+	# Ideally:
+	# .info minnie
+	# -> jefflr returns a minnie infospiel, including uid
+	# .ignore uid
+	# -> jefflr fucks off the uid and all aliases
+
+	# Users for IRC => Mixlr relay
+	userList =
+		"BobBarker":
+			"mixlrUserLogin": ""
+			"mixlrAuthSession": ""
+			"canHeart": true
+		"Hajitorus":
+			"mixlrUserLogin": ""
+			"mixlrAuthSession": ""
+			"canHeart": true
 
 # Creates the IRC client with given params
 ircBot = new irc.Client ircServer, ircNick,
