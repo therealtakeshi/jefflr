@@ -5,101 +5,49 @@ request = require('request')
 querystring = require('querystring')
 websock = require('ws')
 irc = require('irc')
-firebase = require('firebase')
-auth = require('./auth.json')
 
 # General bot configuration
-botDefaults = 
-	ircNick: "jefflrbot"
-	ircChan: "#JeffDrives"
-	ircServ: "irc.freenode.org"
-	mixChan: 27902
-
-botPersonalities =
-	"jefflr2":
-		ircNick: "jefflrbot2"
-		ircChan: "#JeffDrives2"
-	"haji":
-		ircNick: "devvlrbot"
-		ircChan: "#JeffDevs"
-
-for name, opts in botPersonalities when process.argv is name
-	for key, val in opts
-		botDefaults[key] = val
-
 ircNick = "devvlrbot"
 ircChannel = "#jeffdevs"
 ircServer = "irc.freenode.org"
 channelId = 27902
-# This should be replaced by a dict of prod/bob/haji that lets you select
-# which personality to use via nodemon argument
-
-# Advanced bot configuration
-# See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
 userAgent = "mixirc <3"
 
-# New proof of concept firebase thingy.
-firebaseDomain = "https://blazing-fire-3008.firebaseio.com/"
-db = new firebase(firebaseDomain)
-db.auth auth.token, (error) ->
-	if error
-		console.log "[FAIL] Firebase Authication: ", error
-	else
-		console.log "[PASS] Firebase Authenticated"
-dataRef = new firebase(firebaseDomain+'users/BobBarker')
-dataRef.on 'value', (snapshot) ->
-	console.log snapshot.val()
+userList = {}
+ignoreList = []
+ircBot = {}
 
-# Won't Mixlr => IRC relay if from these usernames
-ignoreList = [
-	"Minnie Marabella",
-	"WERD SLLIM"
-]
-# Ideally:
-# .info minnie
-# -> jefflr returns a minnie infospiel, including uid
-# .ignore uid
-# -> jefflr fucks off the uid and all aliases
-
-# Users for IRC => Mixlr relay
-userList =
-	"BobBarker":
-		"mixlrUserLogin": ""
-		"mixlrAuthSession": ""
-		"canHeart": true
-	"Hajitorus":
-		"mixlrUserLogin": ""
-		"mixlrAuthSession": ""
-		"canHeart": true
+useFirebase = true
 
 # Creates the IRC client with given params
-ircBot = new irc.Client botDefaults.ircServer, botDefaults.ircNick,
-	password: null,
-	userName: botDefaults.ircNick,
-	realName: botDefaults.ircNick,
-	port: 6667,
-	debug: false,
-	showErrors: false,
-	autoRejoin: true,
-	autoConnect: true,
-	channels: [botDefaults.ircChannel],
-	retryCount: null,
-	retryDelay: 2000,
-	secure: false,
-	selfSigned: false,
-	certExpired: false,
-	floodProtection: true,
-	floodProtectionDelay: 200,
-	sasl: false,
-	stripColors: false,
-	channelPrefixes: "&#",
-	messageSplit: 512
+ircInitBot = () ->
+	ircBot = new irc.Client ircServer, ircNick,
+		password: null,
+		userName: ircNick,
+		realName: ircNick,
+		port: 6667,
+		debug: false,
+		showErrors: false,
+		autoRejoin: true,
+		autoConnect: true,
+		channels: [ircChannel],
+		retryCount: null,
+		retryDelay: 2000,
+		secure: false,
+		selfSigned: false,
+		certExpired: false,
+		floodProtection: true,
+		floodProtectionDelay: 200,
+		sasl: false,
+		stripColors: false,
+		channelPrefixes: "&#",
+		messageSplit: 512
 
-ircInitBot = ->
 	ircBot.addListener 'message', (from, to, message) ->
 		console.log '%s => %s: %s', from, to, message
 		return if from is ircBot.nick
 		for user, info of userList
+			console.log user, info
 			continue unless from == user
 			if message.toLowerCase() is "sup " + ircBot.nick
 				ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
@@ -108,12 +56,12 @@ ircInitBot = ->
 			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
 				commentId = message.replace ".", ""
 				console.log "IRC => postAddCommentHeart: ", user, commentId,
-					message, botDefaults.mixChan, info.mixlrUserLogin, info.mixlrAuthSession
-				postAddCommentHeart commentId, info
+					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+				postAddCommentHeart commentId, info, userAgent
 			else
 				console.log "IRC => postComm: ", user, message, botDefaults.mixChan,
 					info.mixlrUserLogin, info.mixlrAuthSession
-				postComm message, botDefaults.mixChan, info
+				postComm message, channelId, info, userAgent
 
 sendHTTP = (httpHeader, data) ->
 	httpReq = http.request httpHeader, (res) ->
@@ -164,7 +112,7 @@ postAddCommentHeart = (commentId, user) ->
 
 # Opens a websocket connection and receives data as long as the connection remains open
 # TODO: add in the ping function (seems to be every 5 minutes)
-openSock = (channelId) ->
+openSock = () ->
 	broadcastStart = false
 	channelSocket = JSON.stringify
 		"event":
@@ -226,10 +174,30 @@ openSock = (channelId) ->
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
 
-# Starts up the IRC bot according to above config
-ircInitBot()
+startBot = () ->
+	# Starts up the IRC bot according to above config
+	ircInitBot()
+	# Opens a websocket connection, given the params below
+	openSock()
 
-# Opens a websocket connection, given the params below
-openSock botDefaults.mixChan
+firebase = require('firebase')
+auth = require('./auth.json')
+db = new firebase(auth.domain)
+db.auth auth.token, (error) ->
+	if error
+		console.log "[FAIL] Firebase Authication: ", error
+	else
+		console.log "[PASS] Firebase Authenticated"
+dataRef = new firebase(auth.domain)
+dataRef.on 'value', (snapshot) ->
+	data = snapshot.val()
+	ircNick = data.config.ircNick
+	ircChannel = data.config.ircChannel
+	ircServer = data.config.ircServer
+	channelId = data.config.channelId
+	userAgent = data.config.userAgent
+	userList = data.users
+	ignoreList = data.ignoreList
+	startBot()
 
 # vim: set noet ts=4:
