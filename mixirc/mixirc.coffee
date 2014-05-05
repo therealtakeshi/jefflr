@@ -5,6 +5,8 @@ request = require('request')
 querystring = require('querystring')
 websock = require('ws')
 irc = require('irc')
+firebase = require('firebase')
+auth = require('./auth.json')
 
 # General bot configuration
 botDefaults = 
@@ -34,8 +36,19 @@ channelId = 27902
 
 # Advanced bot configuration
 # See http://api.mixlr.com/users/jeff-gerstmann for example channelId ("id")
-userAgent = "Mixlr Chatbox <3"
-#firebaseDomain = ''
+userAgent = "mixirc <3"
+
+# New proof of concept firebase thingy.
+firebaseDomain = "https://blazing-fire-3008.firebaseio.com/"
+db = new firebase(firebaseDomain)
+db.auth auth.token, (error) ->
+	if error
+		console.log "[FAIL] Firebase Authication: ", error
+	else
+		console.log "[PASS] Firebase Authenticated"
+dataRef = new firebase(firebaseDomain+'users/BobBarker')
+dataRef.on 'value', (snapshot) ->
+	console.log snapshot.val()
 
 # Won't Mixlr => IRC relay if from these usernames
 ignoreList = [
