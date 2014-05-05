@@ -145,6 +145,20 @@ postAddCommentHeart = (commentId, user) ->
 	# Send HTTP POST
 	sendHTTP httpHeader, ""
 
+ircWrapMessage = (a) ->
+	ircSay = irc.colors.wrap "light_gray", "["
+	ircSay += irc.colors.wrap "light_green", a.name
+	ircSay += irc.colors.wrap "light_gray", "]: "
+	ircSay += irc.colors.wrap "yellow", a.content
+	ircSay += irc.colors.wrap "light_gray", " [#{a.id}]"
+	return ircSay
+
+ircWrapHeart = (a) ->
+	ircSay = irc.colors.wrap "light_magenta", "<3 "
+	ircSay += irc.colors.wrap "light_blue", a.user_ids + " "
+	ircSay += irc.colors.wrap "light_red", a.comment_id
+	return ircSay
+
 # Opens a websocket connection and receives data as long as the connection remains open
 # TODO: add in the ping function (seems to be every 5 minutes)
 openSock = () ->
@@ -179,13 +193,7 @@ openSock = () ->
 					console.log "JSON.parse(unescape(m.data)) failed: #{err.message}"
 				unless ignoreList[a.name]?
 					try
-						id = a.id
-						ircSay = irc.colors.wrap "light_gray", "["
-						ircSay += irc.colors.wrap "light_green", a.name
-						ircSay += irc.colors.wrap "light_gray", "]: "
-						ircSay += irc.colors.wrap "yellow", a.content
-						ircSay += irc.colors.wrap "light_gray", " [#{id}]"
-						ircBot.say ircChannel, ircSay
+						ircBot.say ircChannel, ircWrapMessage a
 					catch err
 						ircBot.say ircChannel, err.message
 						console.log "ircBot.say failed: #{err.message}"
@@ -198,13 +206,10 @@ openSock = () ->
 					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
-				a = JSON.parse (unescape m.data)
+				a = JSON.parse unescape m.data
 				# TODO make this pretty, show original comment and translate
 				# user_ids into names.
-				ircSay = irc.colors.wrap "light_magenta", "<3 "
-				ircSay += irc.colors.wrap "light_blue", a.user_ids + " "
-				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say ircChannel, ircSay
+				ircBot.say ircChannel, ircWrapHeart a
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
