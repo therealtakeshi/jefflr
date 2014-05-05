@@ -72,7 +72,7 @@ userList =
 		"mixlrAuthSession": ""
 		"canHeart": true
 
-# Creates the IRC client with given params;
+# Creates the IRC client with given params
 ircBot = new irc.Client ircServer, ircNick,
 	password: null,
 	userName: ircNick,
@@ -162,8 +162,8 @@ postAddCommentHeart = (commentId, user) ->
 	# Send HTTP POST
 	sendHTTP httpHeader, ""
 
-# Opens a websocket connection and receives data as long as the connection remains open;
-# TODO: add in the ping function (seems to be every 5 minutes);
+# Opens a websocket connection and receives data as long as the connection remains open
+# TODO: add in the ping function (seems to be every 5 minutes)
 openSock = (channelId) ->
 	broadcastStart = false
 	channelSocket = JSON.stringify
@@ -210,27 +210,26 @@ openSock = (channelId) ->
 					console.log "Ignored: "+a.name+" : "+a.content
 
 			when "broadcast:start"
-				# NOTE: I don't think this is needed, keeping commented out in case it is.
-					#if (broadcastStart === false) {
-						#broadcastStart = true;
-				ircBot.say(ircChannel, "STREAM IS LIVE: http:#mixlr.com/jeff-gerstmann/chat/");
+				if broadcastStart is false
+					broadcastStart = true
+					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
-				a = JSON.parse(unescape(m.data))
+				a = JSON.parse (unescape m.data)
 				# TODO make this pretty, show original comment and translate
 				# user_ids into names.
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
-				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ");
-				ircSay += irc.colors.wrap("light_red", a.comment_id);
-				ircBot.say(ircChannel, ircSay);
+				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
+				ircSay += irc.colors.wrap "light_red", a.comment_id
+				ircBot.say(ircChannel, ircSay)
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
 
-# Starts up the IRC bot according to above config;
-ircInitBot();
+# Starts up the IRC bot according to above config
+ircInitBot()
 
-# Opens a websocket connection, given the params below;
+# Opens a websocket connection, given the params below
 openSock channelId
 
 # vim: set noet ts=4:
