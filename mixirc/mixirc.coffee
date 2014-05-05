@@ -74,16 +74,20 @@ postMix = (user, url, data) ->
 	jar = request.jar()
 	c = request.cookie "mixlr_user_login=#{user.mixlrUserLogin}" +
 		"; mixlr_session=#{user.mixlrAuthSession}"
-	console.log "postMix: c: #{c}"
 	jar.setCookie c, url
-	form = {}
-	form[k] = v for k, v of data
-	req = request {
+	opts = 
 		method: 'POST'
 		uri: url
 		jar: jar
-		form: form
-	}, (e, resp, body) ->
+		body: ''
+		headers:
+			"X-Requested-With": "XMLHttpRequest"
+			"User-Agent": userAgent
+	if data
+		f = {}
+		f[k] = v for k, v of data
+		opts[form] = f
+	req = request opts, (e, resp, body) ->
 		return console.log "postMix: POST failed" if e
 		if resp.statusCode == 200
 			info = JSON.parse body
