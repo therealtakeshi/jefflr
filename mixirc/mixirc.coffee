@@ -19,6 +19,26 @@ ircBot = {}
 
 useFirebase = true
 
+ircMessage = (from, to, message) ->
+	console.log "#{from} => #{to}: #{message}"
+	return if from is ircBot.nick  # abort if talking to self
+	info = userList[from]
+	return unless info?  # abort if this is a nobody
+	switch
+		when message.toLowerCase() is "sup " + ircBot.nick
+			ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
+		# NOTE: The Regex below only returns true if the message is ".#"
+		# (# = number of any size)
+		when (/^(\.[0-9]+)$/.test message) and info.canHeart
+			commentId = message.replace ".", ""
+			console.log "IRC => postAddCommentHeart: ", from, commentId,
+				message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+			postAddCommentHeart commentId, info, userAgent
+		else
+			console.log "IRC => postComm: ", from, message, channelId,
+				info.mixlrUserLogin, info.mixlrAuthSession
+			postComm message, channelId, info, userAgent
+
 # Creates the IRC client with given params
 ircInitBot = () ->
 	ircBot = new irc.Client ircServer, ircNick,
@@ -43,25 +63,7 @@ ircInitBot = () ->
 		channelPrefixes: "&#",
 		messageSplit: 512
 
-	ircBot.addListener 'message', (from, to, message) ->
-		console.log '%s => %s: %s', from, to, message
-		return if from is ircBot.nick
-		for user, info of userList
-			console.log user, info
-			continue unless from == user
-			if message.toLowerCase() is "sup " + ircBot.nick
-				ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
-			# NOTE: The Regex below only returns true if the message is ".#"
-			# (# = number of any size)
-			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
-				commentId = message.replace ".", ""
-				console.log "IRC => postAddCommentHeart: ", user, commentId,
-					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
-				postAddCommentHeart commentId, info, userAgent
-			else
-				console.log "IRC => postComm: ", user, message, channelId,
-					info.mixlrUserLogin, info.mixlrAuthSession
-				postComm message, channelId, info, userAgent
+	ircBot.addListener 'message', ircMessage
 
 postMix = (user, url, data) ->
 	jar = request.jar()
@@ -146,7 +148,7 @@ openSock = () ->
 			"pusher:subscribe"
 		"data":
 			"channel":
-				"production;user;"+channelId
+				"production;user;#{channelId}"
 	
 	ws = new websock 'ws://ws.pusherapp.com/app/2c4e9e540854144b54a9?protocol=5&client=js&version=1.12.7&flash=false'
 
@@ -159,7 +161,7 @@ openSock = () ->
 		try
 			m = JSON.parse message
 		catch err
-			console.log "JSON.parse(message) failed: " + err.message
+			console.log "JSON.parse(message) failed: #{err.message}"
 		switch m.event
 			when "comment:created"
 				try
@@ -168,21 +170,21 @@ openSock = () ->
 					#a = JSON.parse(decodeURIComponent(m.data))
 					a = JSON.parse unescape m.data
 				catch err
-					console.log "JSON.parse(unescape(m.data)) failed: #{ err.message }"
-				if ignoreList.indexOf a.name is -1
+					console.log "JSON.parse(unescape(m.data)) failed: #{err.message}"
+				unless ignoreList[a.name]?
 					try
 						id = a.id
 						ircSay = irc.colors.wrap "light_gray", "["
 						ircSay += irc.colors.wrap "light_green", a.name
 						ircSay += irc.colors.wrap "light_gray", "]: "
 						ircSay += irc.colors.wrap "yellow", a.content
-						ircSay += irc.colors.wrap "light_gray", " ["+id+"]"
+						ircSay += irc.colors.wrap "light_gray", " [#{id}]"
 						ircBot.say ircChannel, ircSay
 					catch err
 						ircBot.say ircChannel, err.message
-						console.log "ircBot.say failed: "+err.message
+						console.log "ircBot.say failed: #{err.message}"
 				else
-					console.log "Ignored: "+a.name+" : "+a.content
+					console.log "Ignored: #{a.name} : #{a.content}"
 
 			when "broadcast:start"
 				if broadcastStart is false
@@ -193,10 +195,10 @@ openSock = () ->
 				a = JSON.parse (unescape m.data)
 				# TODO make this pretty, show original comment and translate
 				# user_ids into names.
-				ircSay = irc.colors.wrap("light_magenta", "<3 ")
-				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
+				ircSay = irc.colors.wrap "light_magenta", "<3 "
+				ircSay += irc.colors.wrap "light_blue", a.user_ids + " "
 				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say(ircChannel, ircSay)
+				ircBot.say ircChannel, ircSay
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
