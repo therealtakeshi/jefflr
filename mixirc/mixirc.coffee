@@ -59,7 +59,7 @@ ircInitBot = () ->
 					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
 				postAddCommentHeart commentId, info, userAgent
 			else
-				console.log "IRC => postComm: ", user, message, botDefaults.mixChan,
+				console.log "IRC => postComm: ", user, message, channelId,
 					info.mixlrUserLogin, info.mixlrAuthSession
 				postComm message, channelId, info, userAgent
 
@@ -150,9 +150,9 @@ openSock = () ->
 						ircSay += irc.colors.wrap "light_gray", "]: "
 						ircSay += irc.colors.wrap "yellow", a.content
 						ircSay += irc.colors.wrap "light_gray", " ["+id+"]"
-						ircBot.say botDefaults.ircChannel, ircSay
+						ircBot.say ircChannel, ircSay
 					catch err
-						ircBot.say botDefaults.ircChannel, err.message
+						ircBot.say ircChannel, err.message
 						console.log "ircBot.say failed: "+err.message
 				else
 					console.log "Ignored: "+a.name+" : "+a.content
@@ -160,7 +160,7 @@ openSock = () ->
 			when "broadcast:start"
 				if broadcastStart is false
 					broadcastStart = true
-					ircBot.say botDefaults.ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
+					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
 				a = JSON.parse (unescape m.data)
@@ -169,7 +169,7 @@ openSock = () ->
 				ircSay = irc.colors.wrap("light_magenta", "<3 ")
 				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
 				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say(botDefaults.ircChannel, ircSay)
+				ircBot.say(ircChannel, ircSay)
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
