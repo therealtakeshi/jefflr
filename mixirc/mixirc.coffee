@@ -223,7 +223,7 @@ auth = require('./auth.json')
 db = new firebase(auth.domain)
 db.auth auth.token, (error) ->
 	if error
-		console.log "[FAIL] Firebase Authication: ", error
+		console.log "[FAIL] Firebase Authentication: ", error
 	else
 		console.log "[PASS] Firebase Authenticated"
 dataRef = new firebase(auth.domain)
