@@ -30,8 +30,6 @@ ircMessage = (from, to, message) ->
 	switch
 		when message.toLowerCase() is "sup " + ircBot.nick
 			ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
-		# NOTE: The Regex below only returns true if the message is ".#"
-		# (# = number of any size)
 		when info.canHeart and heartMatch?
 			console.log "IRC => postAddCommentHeart: ", from, heartMatch[1],
 				message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
