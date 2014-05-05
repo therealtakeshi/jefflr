@@ -41,7 +41,7 @@ app.get '/', (req, res) ->
 
 	if isFinite(req.query.page)
 		page = req.query.page
-		
+
 	getShowreel user, page, (broadcasts, broadcasterData) ->
 		res.render 'index', broadcasts, broadcasterData
 
