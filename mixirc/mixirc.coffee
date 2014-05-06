@@ -19,6 +19,31 @@ ircBot = {}
 
 useFirebase = true
 
+ircMessage = (from, to, message) ->
+	console.log "#{from} => #{to}: #{message}"
+	return if from is ircBot.nick  # abort if talking to self
+	info = userList[from]
+	return unless info?  # abort if this is a nobody
+	heartMatch = /^\.([0-9]+)$/.exec message
+	mixMsgMatch = /^\[\[ (.+)$/.exec message
+	mixHrtMatch = /^\]\] ([0-9]+)$/.exec message
+	switch
+		when message.toLowerCase() is "sup " + ircBot.nick
+			ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
+		when info.canHeart and heartMatch?
+			console.log "IRC => postAddCommentHeart: ", from, heartMatch[1],
+				message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
+			postAddCommentHeart heartMatch[1], info, userAgent
+		when info.canHeart and mixHrtMatch?
+			console.log "IRC => xhrCommAddHeart #{mixHrtMatch[1]}, #{info}"
+			xhrCommAddHeart mixHrtMatch[1], info
+		when mixMsgMatch?
+			xhrComm mixMsgMatch[1], channelId, info
+		else
+			console.log "IRC => postComm: ", from, message, channelId,
+				info.mixlrUserLogin, info.mixlrAuthSession
+			postComm message, channelId, info, userAgent
+
 # Creates the IRC client with given params
 ircInitBot = () ->
 	ircBot = new irc.Client ircServer, ircNick,
@@ -43,25 +68,40 @@ ircInitBot = () ->
 		channelPrefixes: "&#",
 		messageSplit: 512
 
-	ircBot.addListener 'message', (from, to, message) ->
-		console.log '%s => %s: %s', from, to, message
-		return if from is ircBot.nick
-		for user, info of userList
-			console.log user, info
-			continue unless from == user
-			if message.toLowerCase() is "sup " + ircBot.nick
-				ircBot.say to, "OH YOU KNOW JUST ENSLAVING THE HUMAN RACE"
-			# NOTE: The Regex below only returns true if the message is ".#"
-			# (# = number of any size)
-			else if (/^(\.[0-9]+)$/.test message) and info.canHeart
-				commentId = message.replace ".", ""
-				console.log "IRC => postAddCommentHeart: ", user, commentId,
-					message, channelId, info.mixlrUserLogin, info.mixlrAuthSession
-				postAddCommentHeart commentId, info, userAgent
-			else
-				console.log "IRC => postComm: ", user, message, botDefaults.mixChan,
-					info.mixlrUserLogin, info.mixlrAuthSession
-				postComm message, channelId, info, userAgent
+	ircBot.addListener 'message', ircMessage
+
+postMix = (user, url, data) ->
+	jar = request.jar()
+	c = request.cookie "mixlr_user_login=#{user.mixlrUserLogin}" +
+		"; mixlr_session=#{user.mixlrAuthSession}"
+	jar.setCookie c, url
+	opts = 
+		method: 'POST'
+		uri: url
+		jar: jar
+		body: ''
+		headers:
+			"X-Requested-With": "XMLHttpRequest"
+			"User-Agent": userAgent
+	if data
+		f = {}
+		f[k] = v for k, v of data
+		opts[form] = f
+	req = request opts, (e, resp, body) ->
+		return console.log "postMix: POST failed" if e
+		if resp.statusCode == 200
+			info = JSON.parse body
+			console.log "postMix: #{k}: #{v}" for k, v of info
+		else
+			console.log "postMix: server returned #{resp.statusCode}"
+
+xhrComm = (comment, channelId, user) ->
+	postMix user, 'http://mixlr.com/comments',
+		"comment[content]": comment
+		"comment[broadcaster_id]": channelId
+
+xhrCommAddHeart = (commentId, user) ->
+	postMix user, "http://mixlr.com/comments/#{commentId}/heart"
 
 sendHTTP = (httpHeader, data) ->
 	httpReq = http.request httpHeader, (res) ->
@@ -110,6 +150,20 @@ postAddCommentHeart = (commentId, user) ->
 	# Send HTTP POST
 	sendHTTP httpHeader, ""
 
+ircWrapMessage = (a) ->
+	ircSay = irc.colors.wrap "light_gray", "["
+	ircSay += irc.colors.wrap "light_green", a.name
+	ircSay += irc.colors.wrap "light_gray", "]: "
+	ircSay += irc.colors.wrap "yellow", a.content
+	ircSay += irc.colors.wrap "light_gray", " [#{a.id}]"
+	return ircSay
+
+ircWrapHeart = (a) ->
+	ircSay = irc.colors.wrap "light_magenta", "<3 "
+	ircSay += irc.colors.wrap "light_blue", a.user_ids + " "
+	ircSay += irc.colors.wrap "light_red", a.comment_id
+	return ircSay
+
 # Opens a websocket connection and receives data as long as the connection remains open
 # TODO: add in the ping function (seems to be every 5 minutes)
 openSock = () ->
@@ -119,7 +173,7 @@ openSock = () ->
 			"pusher:subscribe"
 		"data":
 			"channel":
-				"production;user;"+channelId
+				"production;user;#{channelId}"
 	
 	ws = new websock 'ws://ws.pusherapp.com/app/2c4e9e540854144b54a9?protocol=5&client=js&version=1.12.7&flash=false'
 
@@ -132,7 +186,7 @@ openSock = () ->
 		try
 			m = JSON.parse message
 		catch err
-			console.log "JSON.parse(message) failed: " + err.message
+			console.log "JSON.parse(message) failed: #{err.message}"
 		switch m.event
 			when "comment:created"
 				try
@@ -141,35 +195,26 @@ openSock = () ->
 					#a = JSON.parse(decodeURIComponent(m.data))
 					a = JSON.parse unescape m.data
 				catch err
-					console.log "JSON.parse(unescape(m.data)) failed: #{ err.message }"
-				if ignoreList.indexOf a.name is -1
+					console.log "JSON.parse(unescape(m.data)) failed: #{err.message}"
+				unless ignoreList[a.name]?
 					try
-						id = a.id
-						ircSay = irc.colors.wrap "light_gray", "["
-						ircSay += irc.colors.wrap "light_green", a.name
-						ircSay += irc.colors.wrap "light_gray", "]: "
-						ircSay += irc.colors.wrap "yellow", a.content
-						ircSay += irc.colors.wrap "light_gray", " ["+id+"]"
-						ircBot.say botDefaults.ircChannel, ircSay
+						ircBot.say ircChannel, ircWrapMessage a
 					catch err
-						ircBot.say botDefaults.ircChannel, err.message
-						console.log "ircBot.say failed: "+err.message
+						ircBot.say ircChannel, err.message
+						console.log "ircBot.say failed: #{err.message}"
 				else
-					console.log "Ignored: "+a.name+" : "+a.content
+					console.log "Ignored: #{a.name} : #{a.content}"
 
 			when "broadcast:start"
 				if broadcastStart is false
 					broadcastStart = true
-					ircBot.say botDefaults.ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
+					ircBot.say ircChannel, "STREAM IS LIVE: http://mixlr.com/jeff-gerstmann/chat/"
 
 			when "comment:hearted"
-				a = JSON.parse (unescape m.data)
+				a = JSON.parse unescape m.data
 				# TODO make this pretty, show original comment and translate
 				# user_ids into names.
-				ircSay = irc.colors.wrap("light_magenta", "<3 ")
-				ircSay += irc.colors.wrap("light_blue", a.user_ids+" ")
-				ircSay += irc.colors.wrap "light_red", a.comment_id
-				ircBot.say(botDefaults.ircChannel, ircSay)
+				ircBot.say ircChannel, ircWrapHeart a
 
 	ws.on 'close', ->
 		console.log "WebSocket Closed"
@@ -185,7 +230,7 @@ auth = require('./auth.json')
 db = new firebase(auth.domain)
 db.auth auth.token, (error) ->
 	if error
-		console.log "[FAIL] Firebase Authication: ", error
+		console.log "[FAIL] Firebase Authentication: ", error
 	else
 		console.log "[PASS] Firebase Authenticated"
 dataRef = new firebase(auth.domain)
@@ -193,6 +238,9 @@ dataRef.on 'value', (snapshot) ->
 	data = snapshot.val()
 	ircNick = data.config.ircNick
 	ircChannel = data.config.ircChannel
+	if 'dev' in process.argv
+		ircNick = 'devvlrbot'
+		ircChannel = '#JeffDevs'
 	ircServer = data.config.ircServer
 	channelId = data.config.channelId
 	userAgent = data.config.userAgent
