@@ -1,4 +1,3 @@
-// Protip: http://package.json.nodejitsu.com/
 {
   "name": "mixirc",
   "preferGlobal": true,
@@ -13,5 +12,5 @@
     "request": "*",
     "ws": "*"
   },
-  "license": "MIT",
+  "license": "MIT"
 }
