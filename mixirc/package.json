@@ -1,0 +1,16 @@
+{
+  "name": "mixirc",
+  "preferGlobal": true,
+  "version": "0.2.0",
+  "author": "Bob Barker",
+  "description": "IRC <=> Mixlr Relay Bot",
+  "main": "mixirc.coffee",
+  "dependencies": {
+    "coffee-script": "*",
+    "irc": "*",
+    "firebase": "*",
+    "request": "*",
+    "ws": "*"
+  },
+  "license": "MIT"
+}
