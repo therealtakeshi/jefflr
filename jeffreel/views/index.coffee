@@ -26,8 +26,8 @@ html ->
 			div id: 'button', -> a href: broadcast.streams.http.url, ->
 				div id: 'broadcast', ->
 					div id: 'title', -> broadcast.title
-					div id: 'date', -> p "Started: " + broadcast.started_at
-					div id: 'duration', -> p "Duration: " + broadcast.duration
+					div id: 'date', -> p "Started: " + broadcast.started_at_local
+					div id: 'duration', -> p "Duration: " + broadcast.runningtime
 
 		footer ->
 			div id: 'footer', ->
