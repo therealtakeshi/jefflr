@@ -1,6 +1,7 @@
 http = require 'http'
 express = require 'express'
 coffeecup = require 'coffeecup'
+time = require 'time'
 
 app = express()
 app.set('view engine', 'coffee')
@@ -34,6 +35,14 @@ getShowreel = (user, page, callback) ->
 			evalData = "var "
 			evalData += data.slice startStr, lastStr+3
 			eval (evalData)
+
+			for broadcast in broadcasts
+				newTime = new time.Date(broadcast.started_at.substring(0, 4), broadcast.started_at.substring(5, 7), broadcast.started_at.substring(8, 10), broadcast.started_at.substring(11, 13), broadcast.started_at.substring(14, 16), broadcast.started_at.substring(17, 19), 0, 'UTC')
+				newTime.setTimezone('US/Pacific')
+				broadcast.started_at = newTime.toString()
+
+				broadcast.duration = ('0' + (broadcast.duration / 3600).toFixed(0)).slice(-2) + ":" + ('0' + ((broadcast.duration / 60) % 60).toFixed(0)).slice(-2) + ":" + ('0' + (broadcast.duration % 60).toFixed(0)).slice(-2)
+
 			callback { broadcasts, broadcasterData }
 	req.end()
 
