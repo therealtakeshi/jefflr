@@ -7,6 +7,7 @@ app.set('view engine', 'coffee')
 app.engine 'coffee', require('coffeecup').__express
 
 user = 'jeff-gerstmann'
+port = 3000
 
 getShowreel = (user, page, callback) ->
 
@@ -45,6 +46,6 @@ app.get '/', (req, res) ->
 	getShowreel user, page, (broadcasts, broadcasterData) ->
 		res.render 'index', broadcasts, broadcasterData
 
-app.listen 3000
+app.listen port
 
-console.log "Listening on 3000..."
+console.log "Listening on "+port

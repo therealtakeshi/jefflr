@@ -1,0 +1,14 @@
+{
+  "name": "jeffreel",
+  "preferGlobal": true,
+  "version": "0.1.0",
+  "author": "Bob Barker",
+  "description": "Surfaces direct HTTP AWS links for downloading files from the Mixlr Showreel",
+  "main": "app.coffee",
+  "dependencies": {
+    "coffee-script": "*",
+    "express": "*",
+    "coffeecup": "*"
+  },
+  "license": "MIT"
+}
