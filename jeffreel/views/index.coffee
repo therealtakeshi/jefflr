@@ -11,7 +11,8 @@ html ->
 			a {color: #D18026; text-decoration: none}
 			h1 {font-size: 48px; text-align: center; color: #E0A666}
 			#button {width: 600px; margin: 0 auto}
-			#broadcast {background-color: #34414C; width: 600px; margin: 0 auto 10px auto; padding: 0 0 18px 4px}
+			#broadcast {transition: all .3s ease; background-color: #34414C; width: 600px; margin-bottom: 10px; padding: 0 0 18px 4px}
+			#broadcast:hover {background-color: #536779}
 			#title {font-size: 22px; margin-bottom: 0px}
 			#date {display: inline-box; float: left}
 			#duration {display: inline-box; float: right; padding: 0 4px 0 0}
