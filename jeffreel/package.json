@@ -8,7 +8,8 @@
   "dependencies": {
     "coffee-script": "*",
     "express": "*",
-    "coffeecup": "*"
+    "coffeecup": "*",
+    "time": "*"
   },
   "license": "MIT"
 }
