@@ -30,7 +30,8 @@ getShowreel = (user, page, callback) ->
 			for b in broadcasts
 				b.started_at_local = moment.utc(b.started_at).toDate().toString()
 				dur = moment.duration(b.duration, 'seconds')
-				b.runningtime = ((pad+num).slice(-pad.length) for num in [dur.hours(), dur.minutes(), dur.seconds()]).join ":"
+				b.runningtime = ((pad+num).slice(-pad.length) for num in \
+					[dur.hours(), dur.minutes(), dur.seconds()]).join ":"
 			callback { broadcasts, broadcasterData }
 	req.end()
 
