@@ -5,6 +5,10 @@
   "author": "Bob Barker",
   "description": "Surfaces direct HTTP AWS links for downloading files from the Mixlr Showreel",
   "main": "app.coffee",
+  "repository": {
+    "type" : "git",
+    "url" : "http://github.com/MrBobBarker/jefflr.git"
+  },
   "dependencies": {
     "coffee-script": "*",
     "express": "*",
