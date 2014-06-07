@@ -6,12 +6,14 @@ var toStore = {
     sounds:false,
     msgLimit:false,
     msgAllowed:200,
-    colorComment:"#E0A666",
     colorUsername:"#D18026",
-    colorBackground:"#1E262C",
     colorActive:"#27AE60",
     colorInactive:"#C0392B"
 };
+
+
+if (!opts.colorComment) opts.colorComment = "#E0A666";
+if (!opts.colorBackground) opts.colorBackground ="#1E262C";
 
 // Puts the options in the localStorage;
 // if(!localStorage.getItem('jefflr')) {
@@ -181,7 +183,7 @@ function addUser() {
     element.setAttribute("onkeypress","{if (event.keyCode==13) modUser()}");
     element.setAttribute("title","Type username here + Enter to block/unblock");
     document.getElementById("nav_first").appendChild(li);
-    document.getElementById("blockUser").value = "Username Block/Unblock";
+    document.getElementById("blockUser").setAttribute("placeholder","Username Block/Unblock");
 }
 
 // Adds the message limiting;
@@ -221,6 +223,46 @@ function msgLimit() {
     for (i = selection; i > opts.msgAllowed; i--) {
         $("#comment_list:nth-child(2) > li:nth-child("+i+")").remove();
     }
+}
+
+if (beta) {
+    // Adding colorpicker
+    var spectrum1 = document.createElement('script');
+    spectrum1.setAttribute('src','http://bgrins.github.com/spectrum/spectrum.js');
+    document.getElementsByTagName('head')[0].appendChild(spectrum1);
+    var spectrum2 = document.createElement('link');
+    spectrum2.setAttribute('rel','stylesheet');
+    spectrum2.setAttribute('src','http://bgrins.github.com/spectrum/spectrum.css');
+    document.getElementsByTagName('head')[0].appendChild(spectrum2);
+    document.getElementsByClassName('broadcaster_details_sidebar')[0].appendChild(document.createElement('br'));
+    var colorpicker = document.createElement('input');
+    colorpicker.setAttribute('type','text');
+    colorpicker.setAttribute('id','background-picker');
+    document.getElementsByClassName('broadcaster_details_sidebar')[0].appendChild(colorpicker);
+    $('#background-picker').spectrum({
+        color: opts.colorBackground,
+        clickoutFiresChange: true,
+        showButtons: false,
+        chooseText: "Background",
+        change: function () {
+            var color = $('#background-picker').spectrum("get")[0].value;
+            opts.colorBackground = color;
+        }
+    });
+    var colorpicker2 = document.createElement('input');
+    colorpicker2.setAttribute('type','text');
+    colorpicker2.setAttribute('id','text-picker');
+    document.getElementsByClassName('broadcaster_details_sidebar')[0].appendChild(colorpicker2);
+    $('#text-picker').spectrum({
+        color: opts.colorComment,
+        clickoutFiresChange: true,
+        showButtons: false,
+        chooseText: "Text",
+        change: function () {
+            var color = $('#text-picker').spectrum("get")[0].value;
+            opts.colorBackground = color;
+        }
+    });
 }
 
 // Instantiate the normalRules var;
@@ -384,6 +426,7 @@ betaRules += "#chat_box .action.disabled {background: none; border: none;}";
 // betaRules += "#chat_box.large_chat form textarea {background:none;border: 1px solid "+opts.colorUsername+";}";
 // Input box inside post bar (small chat);
 betaRules += "#chat_box form textarea {color: "+opts.colorComment+";background:none;border: 1px solid "+opts.colorUsername+";}";
+betaRules += "@media screen {#chat_box form textarea {width:93%;}}";
 // Submit button inside post bar;
 betaRules += "#chat_box form input[type='submit'] {color: "+opts.colorUsername+";background:none;font-family: 'Avenir LT W01 85 Heavy','Helvetica Neue',Helvetica,arial,sans-serif;text-transform: uppercase;letter-spacing: 1px;text-align: center;}";
 // Submit button inside post bar: hover;
@@ -435,7 +478,6 @@ if (typeof el !== 'undefined' && typeof el !== null){
     el[0].setAttribute("onClick","playSound(this,'http://www.bispoke.org/assets/gb/hornC4.wav');");
 }
 document.getElementsByTagName('head')[0].appendChild(sheet);
-
 
 // select the target node
 if (beta) {
