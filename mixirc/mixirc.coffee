@@ -14,7 +14,8 @@ channelId = 27902
 userAgent = "mixirc <3"
 
 userList = {}
-ignoreList = []
+#ignoreList = []
+ignoreList = ["Jennibel", "Jennibelle"]
 ircBot = {}
 
 useFirebase = true
@@ -69,6 +70,8 @@ ircInitBot = () ->
 		messageSplit: 512
 
 	ircBot.addListener 'message', ircMessage
+	console.log "Listening to IRC"
+	
 
 postMix = (user, url, data) ->
 	jar = request.jar()
@@ -115,6 +118,7 @@ postComm = (comment, channelId, user) ->
 	data = querystring.encode
 		"comment[content]": comment,
 		"comment[broadcaster_id]": channelId,
+		"authenticity_token": user.mixlrAuthToken
 	# An object of options to indicate where to post to
 	httpHeader =
 		hostname: 'mixlr.com'
@@ -245,7 +249,7 @@ dataRef.on 'value', (snapshot) ->
 	channelId = data.config.channelId
 	userAgent = data.config.userAgent
 	userList = data.users
-	ignoreList = data.ignoreList
+	#ignoreList = data.ignoreList
 	startBot()
 
 # vim: set noet ts=4:
