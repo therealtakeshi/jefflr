@@ -139,6 +139,8 @@ postComm = (comment, channelId, user) ->
 # Forms HTTP headers and data for IRC => Mixlr comment hearting, sends to sendHTTP.
 postAddCommentHeart = (commentId, user) ->
 	console.log "postAddCommentHeart =>", commentId, user
+	data = querystring.encode
+		"authenticity_token": user.mixlrAuthToken
 	httpHeader =
 		hostname: "mixlr.com"
 		path: "/comments/"+commentId+"/heart"
@@ -152,7 +154,7 @@ postAddCommentHeart = (commentId, user) ->
 				"; mixlr_session=" + user.mixlrAuthSession
 	console.log httpHeader
 	# Send HTTP POST
-	sendHTTP httpHeader, ""
+	sendHTTP httpHeader, data
 
 ircWrapMessage = (a) ->
 	ircSay = irc.colors.wrap "light_gray", "["
